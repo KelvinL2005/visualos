@@ -2,231 +2,237 @@
 import React, { useState } from "react";
 
 export default function Home() {
-  const [elementValue, setElement] = useState("");
-  const [indexValue, setIndexValue] = useState("");
-  const [inputValue2, setInputValue2] = useState("");
-  const [inputValue, setInputValue] = useState("");
   const [array, setArray] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-  const deleteAtIndex = (index: number) => {
-    setArray(array.filter((_, i) => i !== index));
-  };
+  const [inputValue, setInputValue] = useState("");
+  const [inputValue2, setInputValue2] = useState("");
+  const [indexValue, setIndexValue] = useState("");
+  const [elementValue, setElement] = useState("");
+
+
+  const [activeIndices, setActiveIndices] = useState<number[]>([]);
+  const [isSorting, setIsSorting] = useState(false);
+
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const lockUI = isSorting;
 
   const generateRandomArray = () => {
+    if (lockUI) return;
     const newArray = Array.from({ length: 10 }, () =>
       Math.floor(Math.random() * 10) + 1
     );
     setArray(newArray);
   };
 
-  function insertAtIndex(index: number, element: number) {
-    if (!(index >= 0 && index <= array.length)) {
-      alert(
-        "Index out of bounds. Please enter a valid index between 0 and " +
-          array.length
-      );
-      return;
-    }
-    if (!isNaN(index) && !isNaN(element)) {
-      const newArray = [...array];
-      newArray.splice(index, 0, element);
-      setArray(newArray);
+  const deleteAtIndex = (index: number) => {
+    if (lockUI) return;
+    setArray((prev) => prev.filter((_, i) => i !== index));
+  };
 
-      setIndexValue("");
-      setElement("");
-    }
-  }
+  const insertAtIndex = (index: number, element: number) => {
+    if (lockUI) return;
 
-  function swap(i: number, j: number) {
+    if (index < 0 || index > array.length) return;
+
     const newArray = [...array];
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]]; // Swap elements at indices i and j
+    newArray.splice(index, 0, element);
     setArray(newArray);
-  }
+
+    setIndexValue("");
+    setElement("");
+  };
+
+
+  const updateAtIndex = (index: number, value: number) => {
+    if (lockUI) return;
+
+    if (index < 0 || index >= array.length) return;
+
+    const newArray = [...array];
+    newArray[index] = value;
+    setArray(newArray);
+  };
+
+  const playSortedSound = () => {
+    const audio = new Audio("/sorted.mp3");
+    audio.play().catch(() => {});
+  };
+
+  const bubblesort = async () => {
+    if (lockUI) return;
+
+    setIsSorting(true);
+
+    const arr = [...array];
+    const n = arr.length;
+
+    for (let i = 0; i < n - 1; i++) {
+      for (let j = 0; j < n - i - 1; j++) {
+        setActiveIndices([j, j + 1]);
+        await delay(300);
+
+        if (arr[j] > arr[j + 1]) {
+          [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+          setArray([...arr]);
+          await delay(300);
+        }
+      }
+    }
+
+    setActiveIndices([]);
+    setIsSorting(false);
+    playSortedSound();
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        gap: "20px",
-        backgroundColor: "#282c34",
-      }}
-    >
+    <div style={styles.container}>
       {/* Controls */}
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          position: "absolute",
-          top: 20,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        <button
-          onClick={generateRandomArray}
-          style={{
-            padding: "10px 15px",
-            backgroundColor: "white",
-            color: "black",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
+      <div style={styles.controls}>
+        <button disabled={lockUI} onClick={generateRandomArray} style={buttonStyle(lockUI)}>
           Generate Array
         </button>
 
-        {/* Insert Element */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Enter element"
-            style={{
-              padding: "10px",
-              borderRadius: "6px",
-              border: "2px solid white",
-              backgroundColor: "#fff",
-              color: "#000",
-            }}
-          />
-
-          <button
-            onClick={() => {
-              const num = Number(inputValue);
-              if (!isNaN(num) && inputValue !== "") {
-                setArray([...array, num]);
-                setInputValue("");
-              }
-            }}
-            style={{
-              cursor: "pointer",
-              border: "2px solid white",
-              backgroundColor: "#fff",
-              color: "#000",
-              padding: "10px 15px",
-              borderRadius: "6px",
-            }}
-          >
-            Insert Element
-          </button>
-        </div>
-
-        {/* Delete Index */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <input
-            value={inputValue2}
-            onChange={(e) => setInputValue2(e.target.value)}
-            placeholder="Enter index to delete"
-            style={{
-              padding: "10px 15px",
-              backgroundColor: "white",
-              color: "black",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          />
-
-          <button
-            onClick={() => deleteAtIndex(Number(inputValue2))}
-            style={{
-              cursor: "pointer",
-              border: "2px solid white",
-              backgroundColor: "#fff",
-              color: "#000",
-              padding: "10px 15px",
-              borderRadius: "6px",
-            }}
-          >
-            Delete Index
-          </button>
-        </div>
-
-        {/* Insert at Index */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <input
-            value={indexValue}
-            onChange={(e) => setIndexValue(e.target.value)}
-            placeholder="Enter index"
-            style={{
-              padding: "10px 15px",
-              backgroundColor: "white",
-              color: "black",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          />
-
-          <input
-            value={elementValue}
-            onChange={(e) => setElement(e.target.value)}
-            placeholder="Enter element"
-            style={{
-              padding: "10px 15px",
-              backgroundColor: "white",
-              color: "black",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          />
-
-          <button
-            onClick={() =>
-              insertAtIndex(Number(indexValue), Number(elementValue))
+        <input
+          style={inputStyle(lockUI)}
+          disabled={lockUI}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Enter element"
+        />
+        <button
+          disabled={lockUI}
+          style={buttonStyle(lockUI)}
+          onClick={() => {
+            const num = Number(inputValue);
+            if (!isNaN(num)) {
+              setArray([...array, num]);
+              setInputValue("");
             }
-            style={{
-              cursor: "pointer",
-              border: "2px solid white",
-              backgroundColor: "#fff",
-              color: "#000",
-              padding: "10px 15px",
-              borderRadius: "6px",
-            }}
-          >
-            Insert at Index
-          </button>
-        </div>
+          }}
+        >
+          Insert
+        </button>
+
+        <input
+          style={inputStyle(lockUI)}
+          disabled={lockUI}
+          value={inputValue2}
+          onChange={(e) => setInputValue2(e.target.value)}
+          placeholder="Delete index"
+        />
+        <button disabled={lockUI} onClick={() => deleteAtIndex(Number(inputValue2))} style={buttonStyle(lockUI)}>
+          Delete
+        </button>
+
+        <input
+          style={inputStyle(lockUI)}
+          disabled={lockUI}
+          value={indexValue}
+          onChange={(e) => setIndexValue(e.target.value)}
+          placeholder="Index"
+        />
+        <input
+          style={inputStyle(lockUI)}
+          disabled={lockUI}
+          value={elementValue}
+          onChange={(e) => setElement(e.target.value)}
+          placeholder="Value"
+        />
+        <button
+          disabled={lockUI}
+          onClick={() => insertAtIndex(Number(indexValue), Number(elementValue))}
+          style={buttonStyle(lockUI)}
+        >
+          Insert @ Index
+        </button>
+
+        <button disabled={lockUI} onClick={bubblesort} style={buttonStyle(lockUI)}>
+          Bubble Sort
+        </button>
       </div>
 
-      {/* Array Visualizer */}
-      <div style={{ display: "flex", gap: "0px" }}>
+      {/* Visualizer */}
+      <div style={styles.array}>
         {array.map((value, idx) => (
-          <div
-            key={idx}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <div key={idx} style={styles.boxWrapper}>
             <div
               style={{
-                width: 55,
-                height: 55,
-                border: "2px solid white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "bold",
-                fontSize: "18px",
-                backgroundColor: "#FF6347",
-                color: "white",
-                borderRadius: "5px",
+                ...styles.box,
+                backgroundColor: activeIndices.includes(idx)
+                  ? "#FFD700"
+                  : "#FF6347",
               }}
             >
               {value}
             </div>
-            <div
-              style={{ fontSize: "18px", color: "white", marginTop: "10px" }}
-            >
-              {idx}
-            </div>
+            <div style={styles.index}>{idx}</div>
           </div>
         ))}
       </div>
     </div>
   );
 }
+
+const styles: any = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    backgroundColor: "#282c34",
+    gap: "20px",
+  },
+  controls: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    position: "absolute",
+    top: 20,
+  },
+  array: {
+    display: "flex",
+    gap: "5px",
+  },
+  boxWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  box: {
+    width: 55,
+    height: 55,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "2px solid white",
+    color: "white",
+    fontWeight: "bold",
+    borderRadius: "5px",
+  },
+  index: {
+    color: "white",
+    marginTop: "8px",
+  },
+};
+
+const buttonStyle = (disabled?: boolean) => ({
+  padding: "10px 14px",
+  borderRadius: "6px",
+  border: "1px solid rgba(255,255,255,0.2)",
+  backgroundColor: disabled ? "#d3d3d3" : "#f5f5f5",
+  color: "#111",
+  cursor: disabled ? "not-allowed" : "pointer",
+  transition: "all 0.2s ease",
+});
+
+const inputStyle = (disabled?: boolean) => ({
+  padding: "10px",
+  borderRadius: "6px",
+  border: "1px solid rgba(255,255,255,0.2)",
+  backgroundColor: disabled ? "#d3d3d3" : "#f5f5f5",
+  color: "#111",
+  width: "120px",
+});
