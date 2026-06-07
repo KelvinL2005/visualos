@@ -12,13 +12,14 @@ export default function Home() {
 
   const [activeIndices, setActiveIndices] = useState<number[]>([]);
   const [isSorting, setIsSorting] = useState(false);
-
+  const [isSorted, setIsSorted] = useState(false);
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
   const lockUI = isSorting;
 
   const generateRandomArray = () => {
+    setIsSorted(false);
     if (lockUI) return;
     const newArray = Array.from({ length: 10 }, () =>
       Math.floor(Math.random() * 10) + 1
@@ -27,11 +28,13 @@ export default function Home() {
   };
 
   const deleteAtIndex = (index: number) => {
+    setIsSorted(false);
     if (lockUI) return;
     setArray((prev) => prev.filter((_, i) => i !== index));
   };
 
   const insertAtIndex = (index: number, element: number) => {
+    setIsSorted(false);
     if (lockUI) return;
 
     if (index < 0 || index > array.length) return;
@@ -46,6 +49,7 @@ export default function Home() {
 
 
   const updateAtIndex = (index: number, value: number) => {
+    setIsSorted(false);
     if (lockUI) return;
 
     if (index < 0 || index >= array.length) return;
@@ -61,10 +65,10 @@ export default function Home() {
   };
 
   const bubblesort = async () => {
-    if (lockUI) return;
+    if (lockUI) return; // Prevent sorting if UI is locked
 
     setIsSorting(true);
-
+    setIsSorted(false);
     const arr = [...array];
     const n = arr.length;
 
@@ -83,8 +87,92 @@ export default function Home() {
 
     setActiveIndices([]);
     setIsSorting(false);
+    setIsSorted(true);
     playSortedSound();
   };
+
+  const mergeSort = async () => {
+    if (isSorting) return;
+  
+    setIsSorting(true);
+    setIsSorted(false);
+  
+    const arr = [...array];
+  
+    const sort = async (input: number[]): Promise<number[]> => {
+      if (input.length <= 1) return input;
+  
+      const mid = Math.floor(input.length / 2);
+  
+      const left = await sort(input.slice(0, mid));
+      const right = await sort(input.slice(mid));
+  
+      return await merge(left, right);
+    };
+  
+    const sorted = await sort(arr);
+  
+    setArray(sorted);
+  
+    setActiveIndices([]);
+    setIsSorting(false);
+    setIsSorted(true);
+    playSortedSound();
+  };
+      
+    const merge = async (left: number[], right: number[]) => {
+      const result: number[] = [];
+    
+      let l = 0;
+      let r = 0;
+    
+      while (l < left.length && r < right.length) {
+        // highlight the two pointers being compared
+        setActiveIndices([l, r]);
+        await delay(300);
+    
+        if (left[l] <= right[r]) {
+          result.push(left[l]);
+          l++;
+        } else {
+          result.push(right[r]);
+          r++;
+        }
+    
+        // update UI with partial result
+        setArray([...result, ...left.slice(l), ...right.slice(r)]);
+        await delay(300);
+      }
+    
+      // handle remaining left side
+      while (l < left.length) {
+        setActiveIndices([l]);
+        await delay(200);
+    
+        result.push(left[l]);
+        l++;
+    
+        setArray([...result, ...left.slice(l), ...right.slice(r)]);
+      }
+    
+      // handle remaining right side
+      while (r < right.length) {
+        setActiveIndices([r]);
+        await delay(200);
+    
+        result.push(right[r]);
+        r++;
+    
+        setArray([...result, ...left.slice(l), ...right.slice(r)]);
+      }
+    
+      return result;
+    };
+  
+  
+    
+      
+
 
   return (
     <div style={styles.container}>
@@ -151,6 +239,12 @@ export default function Home() {
         <button disabled={lockUI} onClick={bubblesort} style={buttonStyle(lockUI)}>
           Bubble Sort
         </button>
+
+
+        <button disabled={lockUI} onClick={mergeSort} style={buttonStyle(lockUI)}>
+          Merge Sort
+        </button>
+        
       </div>
 
       {/* Visualizer */}
@@ -170,6 +264,13 @@ export default function Home() {
             <div style={styles.index}>{idx}</div>
           </div>
         ))}
+      </div>
+
+      <div>
+              <label style={{ color: isSorted ? "#32CD32" : "white", fontWeight: "bold", fontSize: "18px" }}
+              
+              
+              >Sorted</label>
       </div>
     </div>
   );
