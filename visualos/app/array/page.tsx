@@ -1,15 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-export default function Home() {
+export default function ArrayPage() {
   const [array, setArray] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
+  const [frames, setFrames] = useState<number[][]>([]);
   const [inputValue, setInputValue] = useState("");
   const [inputValue2, setInputValue2] = useState("");
   const [indexValue, setIndexValue] = useState("");
   const [elementValue, setElement] = useState("");
 
-
+  
   const [activeIndices, setActiveIndices] = useState<number[]>([]);
   const [isSorting, setIsSorting] = useState(false);
   const [isSorted, setIsSorted] = useState(false);
@@ -19,18 +19,18 @@ export default function Home() {
   const lockUI = isSorting;
 
   const generateRandomArray = () => {
-    setIsSorted(false);
-    if (lockUI) return;
-    const newArray = Array.from({ length: 10 }, () =>
+    setIsSorted(false); // Reset sorted state when generating new array
+    if (lockUI) return; // Prevent generating new array if UI is locked
+    const newArray = Array.from({ length: 10 }, () => // Generate 10 random numbers between 1 and 10
       Math.floor(Math.random() * 10) + 1
     );
-    setArray(newArray);
+    setArray(newArray); // Update state with the new random array
   };
 
   const deleteAtIndex = (index: number) => {
-    setIsSorted(false);
-    if (lockUI) return;
-    setArray((prev) => prev.filter((_, i) => i !== index));
+    setIsSorted(false); // Reset sorted state when deleting an element
+    if (lockUI) return; // Prevent deleting if UI is locked
+    setArray((prev) => prev.filter((_, i) => i !== index));// Remove element at specified index
   };
 
   const insertAtIndex = (index: number, element: number) => {
@@ -49,14 +49,14 @@ export default function Home() {
 
 
   const updateAtIndex = (index: number, value: number) => {
-    setIsSorted(false);
-    if (lockUI) return;
+    setIsSorted(false); // Reset sorted state when updating an element
+    if (lockUI) return; // Prevent updating if UI is locked
 
-    if (index < 0 || index >= array.length) return;
+    if (index < 0 || index >= array.length) return; // Validate index
 
     const newArray = [...array];
-    newArray[index] = value;
-    setArray(newArray);
+    newArray[index] = value; // Update element at specified index
+    setArray(newArray); // Update state with the modified array
   };
 
   const playSortedSound = () => {
@@ -67,18 +67,18 @@ export default function Home() {
   const bubblesort = async () => {
     if (lockUI) return; // Prevent sorting if UI is locked
 
-    setIsSorting(true);
-    setIsSorted(false);
-    const arr = [...array];
-    const n = arr.length;
+    setIsSorting(true); // Lock UI during sorting
+    setIsSorted(false); // Reset sorted state at start of sorting
+    const arr = [...array]; // Create a copy of the array to sort
+    const n = arr.length; // Get the length of the array
 
-    for (let i = 0; i < n - 1; i++) {
-      for (let j = 0; j < n - i - 1; j++) {
+    for (let i = 0; i < n - 1; i++) { // Outer loop to control the number of passes
+      for (let j = 0; j < n - i - 1; j++) { // Inner loop to compare adjacent elements
         setActiveIndices([j, j + 1]);
         await delay(300);
 
-        if (arr[j] > arr[j + 1]) {
-          [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        if (arr[j] > arr[j + 1]) { // Compare adjacent elements and swap if they are in the wrong order
+          [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]]; // Swap elements if they are in the wrong order
           setArray([...arr]);
           await delay(300);
         }
@@ -96,6 +96,7 @@ export default function Home() {
   
     setIsSorting(true);
     setIsSorted(false);
+    setFrames([]); // Clear frames at start
   
     const arr = [...array];
   
@@ -107,70 +108,48 @@ export default function Home() {
       const left = await sort(input.slice(0, mid));
       const right = await sort(input.slice(mid));
   
+      // Show the current left and right being merged
+      setFrames(prev => [...prev, left, right]);
+      await delay(400);
+  
       return await merge(left, right);
     };
   
-    const sorted = await sort(arr);
+    const merge = async (left: number[], right: number[]) => {
+      const result: number[] = [];
+      let l = 0, r = 0;
+  
+      while (l < left.length && r < right.length) { // Merge left and right while showing the current state
+        if (left[l] < right[r]) {
+          result.push(left[l++]);
+        } else {
+          result.push(right[r++]);
+        }
+        setFrames(prev => [...prev, [...result, ...left.slice(l), ...right.slice(r)]]); // Show the current merged result along with remaining left and right
+        await delay(400);
+      }
+      while (l < left.length) {
+        result.push(left[l++]);
+        setFrames(prev => [...prev, [...result, ...left.slice(l), ...right.slice(r)]]); // Show the current merged result along with remaining left and right
+        await delay(400);
+      }
+      while (r < right.length) {
+        result.push(right[r++]);
+        setFrames(prev => [...prev, [...result, ...left.slice(l), ...right.slice(r)]]); // Show the current merged result along with remaining left and right
+        await delay(400);
+      }
+      return result;
+    };
+  
+    const sorted = await sort(arr); // Get the fully sorted array after merge sort completes
   
     setArray(sorted);
-  
+    setFrames([]);
     setActiveIndices([]);
     setIsSorting(false);
     setIsSorted(true);
     playSortedSound();
   };
-      
-    const merge = async (left: number[], right: number[]) => {
-      const result: number[] = [];
-    
-      let l = 0;
-      let r = 0;
-    
-      while (l < left.length && r < right.length) {
-        // highlight the two pointers being compared
-        setActiveIndices([l, r]);
-        await delay(300);
-    
-        if (left[l] <= right[r]) {
-          result.push(left[l]);
-          l++;
-        } else {
-          result.push(right[r]);
-          r++;
-        }
-    
-        // update UI with partial result
-        setArray([...result, ...left.slice(l), ...right.slice(r)]);
-        await delay(300);
-      }
-    
-      // handle remaining left side
-      while (l < left.length) {
-        setActiveIndices([l]);
-        await delay(200);
-    
-        result.push(left[l]);
-        l++;
-    
-        setArray([...result, ...left.slice(l), ...right.slice(r)]);
-      }
-    
-      // handle remaining right side
-      while (r < right.length) {
-        setActiveIndices([r]);
-        await delay(200);
-    
-        result.push(right[r]);
-        r++;
-    
-        setArray([...result, ...left.slice(l), ...right.slice(r)]);
-      }
-    
-      return result;
-    };
-  
-  
-    
       
 
 
@@ -248,6 +227,14 @@ export default function Home() {
       </div>
 
       {/* Visualizer */}
+      {/* Merge Sort Frames Visualizer */}
+      <div style={{ display: "flex", gap: "12px", margin: "16px 0" }}>
+        {frames.slice(-4).map((frame, idx) => (
+          <div key={idx} style={{ border: "1px solid #ccc", padding: "8px", borderRadius: "4px" }}>
+            {frame.join(", ")}
+          </div>
+        ))}
+      </div>
       <div style={styles.array}>
         {array.map((value, idx) => (
           <div key={idx} style={styles.boxWrapper}>
@@ -268,8 +255,6 @@ export default function Home() {
 
       <div>
               <label style={{ color: isSorted ? "#32CD32" : "white", fontWeight: "bold", fontSize: "18px" }}
-              
-              
               >Sorted</label>
       </div>
     </div>
